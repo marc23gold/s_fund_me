@@ -3,9 +3,12 @@
 pragma solidity ^0.8.18;
 
 import {Script} from "forge-std/Script.sol";
+import {MockV3Aggregator} from "../test/mocks/MockV3Aggregator.sol";
 
 contract HelperConfig is Script {
 
+    uint8 public constant DECIMALS = 8;
+    int256 public constant INITAL_ANSWER = 2000e8;
     ConfigType public activeConfig;
 
     struct ConfigType{
@@ -23,7 +26,7 @@ contract HelperConfig is Script {
         activeConfig = getBaseSepoliaEthConfig();
         }
         else {
-        activeConfig = getAnvilEthConfig();
+        activeConfig = getOrCreateAnvilEthConfig();
     }
     } 
 
@@ -45,12 +48,20 @@ contract HelperConfig is Script {
         return sepoliaConfig;
     }
 
-    function getAnvilEthConfig() public returns(ConfigType memory) {
+    function getOrCreateAnvilEthConfig() public returns(ConfigType memory) {
+        if(activeConfig.priceFeed != address(0)) {
+            return activeConfig;
+        }
         //deploy the mocks
         //return the mock address
+
         vm.startBroadcast();
+        MockV3Aggregator mock = new MockV3Aggregator(DECIMALS, INITAL_ANSWER);
         vm.stopBroadcast(); 
 
+        ConfigType memory anvilConfig = ConfigType({priceFeed: address(mock)
+        });
+        return anvilConfig;
     }
 }
 
